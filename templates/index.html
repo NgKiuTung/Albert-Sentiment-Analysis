@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALBERT情感识别系统 - 超炫版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+            transition: background 1s ease;
+        }
+
+        /* 动态背景主题 */
+        body.theme-default {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body.theme-like {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+        }
+
+        body.theme-sadness {
+            background: linear-gradient(135deg, #4ECDC4 0%, #556270 100%);
+        }
+
+        body.theme-fear {
+            background: linear-gradient(135deg, #45B7D1 0%, #2C3E50 100%);
+        }
+
+        body.theme-anger {
+            background: linear-gradient(135deg, #FFA07A 0%, #C0392B 100%);
+        }
+
+        body.theme-disgust {
+            background: linear-gradient(135deg, #98D8C8 0%, #6C7A89 100%);
+        }
+
+        body.theme-happiness {
+            background: linear-gradient(135deg, #F7DC6F 0%, #F39C12 100%);
+        }
+
+        body.theme-surprise {
+            background: linear-gradient(135deg, #BB8FCE 0%, #8E44AD 100%);
+        }
+
+        /* Three.js 3D背景容器 */
+        #three-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 爆炸粒子容器 */
+        #explosion-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .explosion-particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 1s ease;
+        }
+
+        .header h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
+                         0 0 30px rgba(255, 255, 255, 0.3);
+            font-weight: 700;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
+                             0 0 30px rgba(255, 255, 255, 0.3);
+            }
+            50% {
+                text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
+                             0 0 50px rgba(255, 255, 255, 0.6),
+                             0 0 70px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            animation: fadeIn 1s ease 0.3s both;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-section {
+            grid-column: 1 / -1;
+        }
+
+        .card-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-title i {
+            font-size: 0.9em;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            position: relative;
+            z-index: 1;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1),
+                        0 0 30px rgba(102, 126, 234, 0.3);
+            animation: inputGlow 0.5s ease;
+        }
+
+        @keyframes inputGlow {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1),
+                            0 0 30px rgba(102, 126, 234, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(102, 126, 234, 0.2),
+                            0 0 50px rgba(102, 126, 234, 0.5);
+            }
+        }
+
+        /* 输入时的动画指示器 */
+        .typing-indicator {
+            display: none;
+            margin-top: 10px;
+            color: #667eea;
+            font-size: 0.9em;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6),
+                        0 0 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+            transform: translateY(-2px);
+        }
+
+        .result-emotion {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+            transition: all 0.5s ease;
+        }
+
+        .emotion-emoji {
+            font-size: 5em;
+            margin-bottom: 15px;
+            animation: bounceIn 0.6s ease;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+        }
+
+        .emotion-label {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            font-size: 1.2em;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2),
+                            0 0 30px rgba(102, 126, 234, 0.3);
+            }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+
+        /* 3D图表容器 */
+        #three-chart {
+            width: 100%;
+            height: 400px;
+            cursor: grab;
+        }
+
+        #three-chart:active {
+            cursor: grabbing;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            transition: left 0.5s;
+        }
+
+        .stat-item:hover::after {
+            left: 100%;
+        }
+
+        .stat-item:hover {
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-content {
+            display: none;
+        }
+
+        .result-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .empty-state p {
+            font-size: 1.2em;
+        }
+
+        .emotion-list {
+            margin-top: 20px;
+        }
+
+        .emotion-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .emotion-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--emotion-color);
+            transition: width 0.3s ease;
+        }
+
+        .emotion-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .emotion-item:hover::before {
+            width: 100%;
+            opacity: 0.1;
+        }
+
+        .emotion-item.top {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border: 2px solid #667eea;
+            animation: topItemPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes topItemPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+            }
+        }
+
+        .emotion-icon {
+            font-size: 2em;
+            margin-right: 15px;
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2));
+        }
+
+        .emotion-info {
+            flex: 1;
+        }
+
+        .emotion-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .emotion-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .emotion-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+            position: relative;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 10px var(--glow-color);
+            }
+            50% {
+                box-shadow: 0 0 20px var(--glow-color),
+                            0 0 30px var(--glow-color);
+            }
+        }
+
+        .emotion-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .emotion-percent {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #667eea;
+            min-width: 60px;
+            text-align: right;
+            text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.3);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .error-message {
+            padding: 15px;
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 10px;
+            color: #c33;
+            margin-top: 15px;
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .error-message.active {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2.5em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 加载动画增强 */
+        .loading p {
+            animation: loadingText 1.5s ease-in-out infinite;
+        }
+
+        @keyframes loadingText {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="theme-default">
+    <!-- Three.js 3D背景容器 -->
+    <div id="three-container"></div>
+
+    <!-- 爆炸粒子容器 -->
+    <div id="explosion-container"></div>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1><i class="fas fa-brain"></i> ALBERT情感识别系统</h1>
+            <p>基于深度学习的中文文本情感分析 · 实时预测 · 精准识别</p>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 输入区域 -->
+            <div class="card input-section">
+                <h2 class="card-title">
+                    <i class="fas fa-edit"></i>
+                    输入文本
+                </h2>
+                <textarea
+                    id="inputText"
+                    placeholder="请输入要分析的中文文本，例如：今天天气真好，心情特别开心！😄"
+                ></textarea>
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <span>正在输入...</span>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" id="predictBtn">
+                        <i class="fas fa-magic"></i>
+                        开始分析
+                    </button>
+                    <button class="btn-secondary" id="clearBtn">
+                        <i class="fas fa-eraser"></i>
+                        清空
+                    </button>
+                </div>
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+
+            <!-- 预测结果 -->
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-heart"></i>
+                    情感识别结果
+                </h2>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在分析中...</p>
+                </div>
+
+                <div class="empty-state" id="emptyState">
+                    <i class="fas fa-comment-dots"></i>
+                    <p>输入文本后点击"开始分析"</p>
+                </div>
+
+                <div class="result-content" id="resultContent">
+                    <div class="result-emotion" id="resultEmotion">
+                        <div class="emotion-emoji" id="emotionEmoji">😊</div>
+                        <div class="emotion-label" id="emotionLabel">快乐</div>
+                        <div class="confidence-badge" id="confidenceBadge">置信度: 95.2%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D概率分布图表 -->
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    3D情感概率分布
+                </h2>
+                <div class="chart-container">
+                    <div id="three-chart"></div>
+                </div>
+            </div>
+
+            <!-- 详细信息 -->
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-list"></i>
+                    详细分析
+                </h2>
+                <div class="emotion-list" id="emotionList">
+                    <div class="empty-state">
+                        <i class="fas fa-chart-pie"></i>
+                        <p>等待分析结果</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="card">
+                <h2 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    统计信息
+                </h2>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">推理时间 (ms)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">文本长度</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Token数量</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">计算设备</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== Three.js 3D粒子背景系统 ==========
+        let scene, camera, renderer, particles;
+        let particleGeometry, particleMaterial;
+        let mouseX = 0, mouseY = 0;
+
+        function initThreeBackground() {
+            const container = document.getElementById('three-container');
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // 创建粒子系统
+            const particleCount = 1000;
+            particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 100;
+                positions[i + 1] = (Math.random() - 0.5) * 100;
+                positions[i + 2] = (Math.random() - 0.5) * 100;
+
+                colors[i] = Math.random();
+                colors[i + 1] = Math.random();
+                colors[i + 2] = Math.random();
+            }
+
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            particleMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+
+            // 鼠标移动交互
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animateThreeBackground();
+        }
+
+        function animateThreeBackground() {
+            requestAnimationFrame(animateThreeBackground);
+
+            particles.rotation.x += 0.0005;
+            particles.rotation.y += 0.0005;
+
+            // 鼠标交互
+            particles.rotation.x += mouseY * 0.0005;
+            particles.rotation.y += mouseX * 0.0005;
+
+            renderer.render(scene, camera);
+        }
+
+        // ========== 3D柱状图 ==========
+        let chartScene, chartCamera, chartRenderer, chartBars = [];
+        let isChartRotating = false;
+        let chartMouseX = 0, chartMouseY = 0;
+
+        function create3DChart(emotions) {
+            const container = document.getElementById('three-chart');
+            container.innerHTML = '';
+
+            chartScene = new THREE.Scene();
+            chartCamera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            chartCamera.position.set(0, 5, 15);
+            chartCamera.lookAt(0, 0, 0);
+
+            chartRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            chartRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(chartRenderer.domElement);
+
+            // 添加光源
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            chartScene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            chartScene.add(directionalLight);
+
+            // 清除旧柱状图
+            chartBars.forEach(bar => chartScene.remove(bar));
+            chartBars = [];
+
+            // 创建3D柱状图
+            const barWidth = 2.25;  // 增大50% (原1.5)
+            const spacing = 3.75;   // 相应增大间距
+            const startX = -(emotions.length - 1) * spacing / 2;
+
+            emotions.forEach((emotion, index) => {
+                const height = (emotion.probability / 100) * 8;
+                const geometry = new THREE.BoxGeometry(barWidth, height, barWidth);
+                const material = new THREE.MeshPhongMaterial({
+                    color: emotion.color,
+                    shininess: 100,
+                    specular: 0x444444
+                });
+
+                const bar = new THREE.Mesh(geometry, material);
+                bar.position.x = startX + index * spacing;
+                bar.position.y = height / 2;
+
+                chartScene.add(bar);
+                chartBars.push(bar);
+
+                // 添加发光效果
+                const glowGeometry = new THREE.BoxGeometry(barWidth * 1.1, height * 1.1, barWidth * 1.1);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: emotion.color,
+                    transparent: true,
+                    opacity: 0.2
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                glow.position.copy(bar.position);
+                chartScene.add(glow);
+            });
+
+            // 鼠标交互
+            container.addEventListener('mousedown', () => isChartRotating = true);
+            container.addEventListener('mouseup', () => isChartRotating = false);
+            container.addEventListener('mousemove', (event) => {
+                if (isChartRotating) {
+                    const rect = container.getBoundingClientRect();
+                    chartMouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                    chartMouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                }
+            });
+
+            animate3DChart();
+        }
+
+        function animate3DChart() {
+            requestAnimationFrame(animate3DChart);
+
+            // 自动旋转
+            chartBars.forEach((bar, index) => {
+                bar.rotation.y += 0.01;
+            });
+
+            // 鼠标控制旋转
+            if (isChartRotating) {
+                chartCamera.position.x = chartMouseX * 10;
+                chartCamera.position.y = 5 + chartMouseY * 5;
+                chartCamera.lookAt(0, 0, 0);
+            }
+
+            chartRenderer.render(chartScene, chartCamera);
+        }
+
+        // ========== 爆炸动画 ==========
+        function createExplosion(x, y, color) {
+            const container = document.getElementById('explosion-container');
+            const particleCount = 30;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'explosion-particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = color;
+
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const velocity = 100 + Math.random() * 100;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                particle.style.setProperty('--tx', tx + 'px');
+                particle.style.setProperty('--ty', ty + 'px');
+
+                container.appendChild(particle);
+
+                setTimeout(() => {
+                    particle.remove();
+                }, 1000);
+            }
+        }
+
+        // ========== 主题背景切换 ==========
+        function changeTheme(emotionLabel) {
+            const body = document.body;
+            body.className = `theme-${emotionLabel}`;
+        }
+
+        // ========== 全局变量 ==========
+        let typingTimer;
+
+        // DOM元素
+        const inputText = document.getElementById('inputText');
+        const predictBtn = document.getElementById('predictBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('emptyState');
+        const resultContent = document.getElementById('resultContent');
+        const errorMessage = document.getElementById('errorMessage');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // ========== 输入监听 ==========
+        inputText.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+
+            if (inputText.value.trim()) {
+                typingIndicator.classList.add('active');
+                typingTimer = setTimeout(() => {
+                    typingIndicator.classList.remove('active');
+                }, 1000);
+            } else {
+                typingIndicator.classList.remove('active');
+            }
+        });
+
+        // ========== 清空按钮 ==========
+        clearBtn.addEventListener('click', () => {
+            inputText.value = '';
+            resultContent.classList.remove('active');
+            emptyState.style.display = 'block';
+            errorMessage.classList.remove('active');
+            typingIndicator.classList.remove('active');
+            resetStats();
+            changeTheme('default');
+        });
+
+        // ========== 预测按钮 ==========
+        predictBtn.addEventListener('click', async () => {
+            const text = inputText.value.trim();
+
+            if (!text) {
+                showError('请输入文本内容');
+                return;
+            }
+
+            // 显示加载状态
+            loading.classList.add('active');
+            emptyState.style.display = 'none';
+            resultContent.classList.remove('active');
+            errorMessage.classList.remove('active');
+            predictBtn.disabled = true;
+
+            try {
+                // 发送预测请求
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResult(data.result);
+                } else {
+                    showError(data.error || '预测失败');
+                }
+            } catch (error) {
+                showError('网络错误: ' + error.message);
+            } finally {
+                loading.classList.remove('active');
+                predictBtn.disabled = false;
+            }
+        });
+
+        // ========== 显示结果 ==========
+        function displayResult(result) {
+            const { predicted_emotion, confidence, emotions, statistics } = result;
+
+            // 显示主要情感
+            document.getElementById('emotionEmoji').textContent = predicted_emotion.emoji;
+            document.getElementById('emotionLabel').textContent = predicted_emotion.label_zh;
+            document.getElementById('emotionLabel').style.color = predicted_emotion.color;
+            document.getElementById('confidenceBadge').textContent = `置信度: ${confidence}%`;
+            document.getElementById('resultEmotion').style.background =
+                `linear-gradient(135deg, ${predicted_emotion.color}20 0%, ${predicted_emotion.color}40 100%)`;
+
+            // 切换主题背景
+            changeTheme(predicted_emotion.label_en);
+
+            // 创建爆炸效果
+            const emojiElement = document.getElementById('emotionEmoji');
+            const rect = emojiElement.getBoundingClientRect();
+            createExplosion(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+                predicted_emotion.color
+            );
+
+            // 更新3D图表
+            create3DChart(emotions);
+
+            // 更新详细列表
+            updateEmotionList(emotions);
+
+            // 更新统计信息
+            updateStats(statistics);
+
+            // 显示结果
+            resultContent.classList.add('active');
+        }
+
+        // ========== 更新情感列表 ==========
+        function updateEmotionList(emotions) {
+            const list = document.getElementById('emotionList');
+            list.innerHTML = emotions.map((emotion, index) => `
+                <div class="emotion-item ${index === 0 ? 'top' : ''}" style="--emotion-color: ${emotion.color}">
+                    <div class="emotion-icon">${emotion.emoji}</div>
+                    <div class="emotion-info">
+                        <div class="emotion-name">${emotion.label_zh} (${emotion.label_en})</div>
+                        <div class="emotion-bar">
+                            <div class="emotion-bar-fill"
+                                 style="width: ${emotion.probability}%;
+                                        background: ${emotion.color};
+                                        --glow-color: ${emotion.color};"></div>
+                        </div>
+                    </div>
+                    <div class="emotion-percent">${emotion.probability}%</div>
+                </div>
+            `).join('');
+        }
+
+        // ========== 更新统计信息 ==========
+        function updateStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${stats.inference_time}</div>
+                    <div class="stat-label">推理时间 (ms)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.text_length}</div>
+                    <div class="stat-label">文本长度</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.valid_token_count}</div>
+                    <div class="stat-label">Token数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.device}</div>
+                    <div class="stat-label">计算设备</div>
+                </div>
+            `;
+        }
+
+        // ========== 重置统计信息 ==========
+        function resetStats() {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">--</div>
+                    <div class="stat-label">推理时间 (ms)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">--</div>
+                    <div class="stat-label">文本长度</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">--</div>
+                    <div class="stat-label">Token数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">--</div>
+                    <div class="stat-label">计算设备</div>
+                </div>
+            `;
+
+            document.getElementById('emotionList').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-chart-pie"></i>
+                    <p>等待分析结果</p>
+                </div>
+            `;
+
+            document.getElementById('three-chart').innerHTML = '';
+        }
+
+        // ========== 显示错误 ==========
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+            setTimeout(() => {
+                errorMessage.classList.remove('active');
+            }, 5000);
+        }
+
+        // ========== 快捷键 ==========
+        inputText.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                predictBtn.click();
+            }
+        });
+
+        // ========== 初始化 ==========
+        window.addEventListener('load', () => {
+            initThreeBackground();
+        });
+    </script>
+</body>
+</html>
