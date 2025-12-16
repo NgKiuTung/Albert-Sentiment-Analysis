@@ -37,9 +37,26 @@ git checkout Dev
 
 ## 训练与评估可视化
 
-| 训练/评估曲线 | ROC 曲线 | PR 曲线 | 混淆矩阵 |
-| --- | --- | --- | --- |
-| ![训练准确率与损失](images/albert_epoch_acc_loss.jpg) | ![ROC 曲线](images/albert_roc_curve.jpg) | ![PR 曲线](images/albert_pr_curve.jpg) | ![混淆矩阵](images/albert_confusion_matrix.jpg) |
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/albert_epoch_acc_loss.jpg" alt="训练准确率与损失" width="260" />
+      <div>训练/评估曲线</div>
+    </td>
+    <td align="center">
+      <img src="images/albert_roc_curve.jpg" alt="ROC 曲线" width="260" />
+      <div>ROC 曲线</div>
+    </td>
+    <td align="center">
+      <img src="images/albert_pr_curve.jpg" alt="PR 曲线" width="260" />
+      <div>PR 曲线</div>
+    </td>
+    <td align="center">
+      <img src="images/albert_confusion_matrix.jpg" alt="混淆矩阵" width="260" />
+      <div>混淆矩阵</div>
+    </td>
+  </tr>
+</table>
 
 - **训练准确率与损失**：准确率曲线稳步上升、损失同步下降，表明 7 类情感任务在当前超参下能平滑收敛；中后期波动较小，说明未出现明显过拟合。
 - **ROC 曲线**：多条曲线紧贴左上角，微平均（micro）与宏平均（macro）都处于高值区间，提示模型对各情感类别都有较强的区分能力，AUC 越接近 1 表现越好。
